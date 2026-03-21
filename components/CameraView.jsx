@@ -110,8 +110,8 @@ function StatusBar ({ status }) {
 /** The main scanning frame for a flattened aluminium can */
 function CanScanFrame ({ isReady }) {
   // A flattened can is landscape — roughly 3:1 ratio
-  const FRAME_W = 300;
-  const FRAME_H = 110;
+  const FRAME_W = 420;
+  const FRAME_H = 230;
 
   const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -232,6 +232,16 @@ export default function CameraView ({ onCapture }) {
       requestPermission();
     }
   }, [permission]);
+  
+  useEffect(() => {
+    // Lock to landscape when this screen mounts
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+
+    return () => {
+      // Unlock (or return to portrait) when leaving
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    };
+  }, []);
 
   if (!permission) {
     return <View style={styles.centered} />;
@@ -251,15 +261,6 @@ export default function CameraView ({ onCapture }) {
       </View>
     );
   }
-  useEffect(() => {
-    // Lock to landscape when this screen mounts
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-
-    return () => {
-      // Unlock (or return to portrait) when leaving
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-    };
-  }, []);
 
   return (
     <View style={styles.root}>
@@ -268,11 +269,11 @@ export default function CameraView ({ onCapture }) {
         ref={cameraRef}
         facing="back"
         mode="picture"
-        ratio="4:3"
+        ratio="16:9"
       />
 
       {/* Dark vignette overlay */}
-      <View style={styles.vignette} pointerEvents="none" />
+      {/* <View style={styles.vignette} pointerEvents="none" /> */}
 
       {/* Top status bar */}
       <View style={styles.topBar}>
@@ -344,7 +345,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    paddingTop: 52,
     paddingHorizontal: 20,
     alignItems: 'center',
     zIndex: 10,
@@ -473,7 +473,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingBottom: 44,
     paddingHorizontal: 24,
   },
 

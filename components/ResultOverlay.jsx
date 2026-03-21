@@ -3,6 +3,29 @@ import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from 'react-nati
 
 const { width, height } = Dimensions.get('window');
 
+// Inside your Result Component
+const GridOverlay = ({ diffs, gridConfig }) => {
+  return (
+    <View style={styles.gridContainer}>
+      {diffs.map((error, index) => (
+        <View
+          key={index}
+          style={[
+            styles.errorSquare,
+            {
+              top: (error.row / gridConfig.rows) * 100 + '%',
+              left: (error.col / gridConfig.cols) * 100 + '%',
+              width: (100 / gridConfig.cols) + '%',
+              height: (100 / gridConfig.rows) + '%',
+              backgroundColor: 'rgba(255, 0, 0, 0.4)' // Red highlight for mismatches
+            }
+          ]}
+        />
+      ))}
+    </View>
+  );
+};
+
 export default function ResultOverlay ({ score, onReset }) {
   // Define thresholds for the decorator quality standards
   const isPass = score <= 1.5;
