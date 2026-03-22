@@ -1,56 +1,83 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, SafeAreaView } from 'react-native';
+import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
 import CameraView from './components/CameraView';
+import { processGridComparison } from './utils/analyzer';
 import ResultOverlay from './components/ResultOverlay';
-import { calculateDeltaE, rgbToLab } from './utils/colorMath';
 
 export default function App () {
-  const [referenceLab, setReferenceLab] = useState(null);
-  const [testLab, setTestLab] = useState(null);
-  const [deltaE, setDeltaE] = useState(null);
+  const [referencePhoto, setReferencePhoto] = useState(null);
+  const [testPhoto, setTestPhoto] = useState(null);
+  const [errorMap, setErrorMap] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleColorCapture = (rgb) => {
-    const lab = rgbToLab(rgb.r, rgb.g, rgb.b);
-
-    if (!referenceLab) {
-      setReferenceLab(lab);
+  const handleCapture = async (photo) => {
+    if (!referencePhoto) {
+      setReferencePhoto(photo);
     } else {
-      setTestLab(lab);
-      const diff = calculateDeltaE(referenceLab, lab);
-      setDeltaE(diff);
+      setTestPhoto(photo);
+      setIsProcessing(true);
+
+      try {
+        const errors = await processGridComparison(referencePhoto.uri, photo.uri);
+        setErrorMap(errors);
+      } catch (err) {
+        console.error("Analysis Error:", err);
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
-  const resetScanner = () => {
-    setReferenceLab(null);
-    setTestLab(null);
-    setDeltaE(null);
+  const resetApp = () => {
+    setReferencePhoto(null);
+    setTestPhoto(null);
+    setErrorMap(null);
+    setIsProcessing(false);
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Label Verifier Pro</Text>
-        <Text style={styles.subtitle}>
-          {!referenceLab ? "Step 1: Scan Reference Sample Label" : "Step 2: Scan Production Can"}
-        </Text>
-      </View>
-
-      <CameraView onCapture={handleColorCapture} />
-
-      {deltaE !== null && (
+      {errorMap !== null && testPhoto && (
         <ResultOverlay
-          score={deltaE}
-          onReset={resetScanner}
+          testPhoto={testPhoto}
+          errors={errorMap}
+          onReset={resetApp}
         />
+      )}
+
+      {errorMap === null && (
+        <CameraView
+          onCapture={handleCapture}
+          referenceImage={referencePhoto}
+        />
+      )}
+
+      {isProcessing && (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#00C8FF" />
+          <Text style={styles.loaderText}>ANALYZING...</Text>
+        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  header: { padding: 20, alignItems: 'center', backgroundColor: '#1a1a1a' },
-  title: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-  subtitle: { color: '#ffd700', marginTop: 5 }
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  loaderContainer: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  loaderText: {
+    color: '#00C8FF',
+    marginTop: 20,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
 });
